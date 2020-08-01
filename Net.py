@@ -31,19 +31,20 @@ class Net:
         self.path_to_file = osp.split(path_to_file)[0]
 
         image = np.expand_dims(image, axis=2)
-        mask = np.round(self.model.predict(np.array([image]))[0, ..., 0])
+        mask = self.model.predict(np.array([image]))[0, ..., 0]
+
+        return mask.astype(np.float32)
+
+
+    def process_mask(self, mask):
+        mask[mask>0.6] = 1
+        mask[mask <= 0.6] = 0
+        mask = np.round(mask).astype(np.float32)
 
         kernel = np.ones((5, 5), np.uint8)
         dilation = cv2.dilate(mask, kernel, iterations=2)
         erosion = cv2.erode(dilation, kernel, iterations=2)
-
-
-        return erosion
-
-
-    def process_mask(self, mask):
-
-        erosion = mask * 255
+        erosion = erosion * 255
         erosion = np.asarray(erosion, 'uint8')
         contours, hierarchy = cv2.findContours(erosion, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
